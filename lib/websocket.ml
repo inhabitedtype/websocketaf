@@ -299,12 +299,12 @@ module Frame = struct
     end
   ;;
 
-  let serialize_control faraday ~opcode =
-    serialize_headers faraday ~is_fin:true ~opcode ~payload_length:0
+  let serialize_control ?mask faraday ~opcode =
+    let opcode = (opcode :> Opcode.t) in
+    serialize_headers faraday ?mask ~is_fin:true ~opcode ~payload_length:0
 
   let schedule_serialize ?mask faraday ~is_fin ~opcode ~payload ~off ~len =
-    let payload_length = Bigstringaf.length payload in
-    serialize_headers faraday ?mask ~is_fin ~opcode ~payload_length;
+    serialize_headers faraday ?mask ~is_fin ~opcode ~payload_length:len;
     begin match mask with
     | None -> ()
     | Some mask -> apply_mask mask payload ~off ~len
@@ -313,8 +313,16 @@ module Frame = struct
   ;;
 
   let serialize_bytes ?mask faraday ~is_fin ~opcode ~payload ~off ~len =
-    let payload_length = Bytes.length payload in
-    serialize_headers faraday ?mask ~is_fin ~opcode ~payload_length;
+    serialize_headers faraday ?mask ~is_fin ~opcode ~payload_length:len;
+    begin match mask with
+    | None -> ()
+    | Some mask -> apply_mask_bytes mask payload ~off ~len
+    end;
+    Faraday.write_bytes faraday payload ~off ~len;
+  ;;
+
+  let schedule_serialize_bytes ?mask faraday ~is_fin ~opcode ~payload ~off ~len =
+    serialize_headers faraday ?mask ~is_fin ~opcode ~payload_length:len;
     begin match mask with
     | None -> ()
     | Some mask -> apply_mask_bytes mask payload ~off ~len
