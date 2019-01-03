@@ -66,7 +66,9 @@ module Frame : sig
   val opcode   : t -> Opcode.t
 
   val has_mask : t -> bool
-  val mask     : t -> int32 option
+  val mask     : t -> unit
+  val unmask   : t -> unit
+
   val mask_exn : t -> int32
 
   val payload_length : t -> int
