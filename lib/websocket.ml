@@ -159,10 +159,10 @@ module Frame = struct
   let payload_length_of_offset t off =
     let bits = Bigstring.unsafe_get t (off + 1) |> Char.code in
     let length = bits land 0b01111111 in
-    if length = 126 then Bigstring.unsafe_get_u16_be t ~off:(off + 2)                 else
+    if length = 126 then Bigstringaf.unsafe_get_int16_be t (off + 2)                 else
     (* This is technically unsafe, but if somebody's asking us to read 2^63
      * bytes, then we're already screwd. *)
-    if length = 127 then Bigstring.unsafe_get_64_be  t ~off:(off + 2) |> Int64.to_int else
+    if length = 127 then Bigstringaf.unsafe_get_int64_be t (off + 2) |> Int64.to_int else
     length
   ;;
 
@@ -188,9 +188,9 @@ module Frame = struct
 
   let mask_exn t =
     let bits = Bigstring.unsafe_get t 1 |> Char.code in
-    if bits  = 254 then Bigstring.unsafe_get_32_be t ~off:4  else
-    if bits  = 255 then Bigstring.unsafe_get_32_be t ~off:10 else
-    if bits >= 127 then Bigstring.unsafe_get_32_be t ~off:2  else
+    if bits  = 254 then Bigstringaf.unsafe_get_int32_be t 4  else
+    if bits  = 255 then Bigstringaf.unsafe_get_int32_be t 10 else
+    if bits >= 127 then Bigstringaf.unsafe_get_int32_be t 2  else
     failwith "Frame.mask_exn: no mask present"
   ;;
 
@@ -218,7 +218,7 @@ module Frame = struct
   ;;
 
   let copy_payload t =
-    with_payload t ~f:Bigstring.copy
+    with_payload t ~f:Bigstringaf.copy
   ;;
 
   let copy_payload_bytes t = 
@@ -271,8 +271,8 @@ module Frame = struct
 
   let parse =
     let open Angstrom in
-    Unsafe.peek 2 (fun bs ~off ~len -> length_of_offset bs off)
-    >>= fun len -> Unsafe.take len Bigstring.sub
+    Unsafe.peek 2 (fun bs ~off ~len:_ -> length_of_offset bs off)
+    >>= fun len -> Unsafe.take len Bigstringaf.sub
   ;;
 
   let serialize_headers faraday ?mask ~is_fin ~opcode ~payload_length =
