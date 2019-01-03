@@ -60,6 +60,9 @@ module Opcode = struct
   let to_int = code
   let of_int = of_code
   let of_int_exn = of_code_exn
+
+  let pp_hum fmt t =
+    Format.fprintf fmt "%d" (to_int t)
 end
 
 module Close_code = struct
