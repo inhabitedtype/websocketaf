@@ -60,6 +60,9 @@ module Opcode = struct
   let to_int = code
   let of_int = of_code
   let of_int_exn = of_code_exn
+
+  let pp_hum fmt t =
+    Format.fprintf fmt "%d" (to_int t)
 end
 
 module Close_code = struct
@@ -233,6 +236,10 @@ module Frame = struct
     let payload_length = payload_length_of_offset t off in
     payload_offset + payload_length
   ;;
+
+  let length t =
+		length_of_offset t 0
+	;;
 
   let apply_mask mask bs ~off ~len =
     for i = off to off + len - 1 do

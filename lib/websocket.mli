@@ -26,6 +26,8 @@ module Opcode : sig
 
   val of_int     : int -> t option
   val of_int_exn : int -> t
+
+  val pp_hum : Format.formatter -> t -> unit
 end
 
 module Close_code : sig
@@ -72,6 +74,8 @@ module Frame : sig
 
   val mask_inplace   : t -> unit
   val unmask_inplace : t -> unit
+
+  val length : t -> int
 
   val payload_length : t -> int
   val with_payload   : t -> f:(Bigstringaf.t -> off:int -> len:int -> 'a) -> 'a
