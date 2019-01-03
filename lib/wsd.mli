@@ -1,8 +1,18 @@
+module IOVec = Httpaf.IOVec
+
+type mode =
+  [ `Client of unit -> int32
+  | `Server
+  ]
+
 type t 
 
-val schedule
-  :  ?mask:int32
+val create
+  : mode
   -> t
+
+val schedule
+  :  t
   -> kind:[ `Text | `Binary ]
   -> Bigstringaf.t
   -> off:int
@@ -10,8 +20,7 @@ val schedule
   -> unit
 
 val send_bytes
-  :  ?mask:int32
-  -> t
+  :  t
   -> kind:[ `Text | `Binary ]
   -> Bytes.t
   -> off:int
@@ -23,3 +32,10 @@ val send_pong : t -> unit
 
 val flushed : t -> (unit -> unit) -> unit
 val close   : t -> unit
+
+val next : t -> [ `Write of Bigstringaf.t IOVec.t list | `Yield | `Close of int ]
+val report_result : t -> [`Ok of int | `Closed ] -> unit
+
+val is_closed : t -> bool
+
+val when_ready_to_write : t -> (unit -> unit) -> unit
