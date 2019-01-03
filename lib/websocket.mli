@@ -83,7 +83,11 @@ module Frame : sig
 
   val parse : t Angstrom.t
 
-  val serialize_control : Faraday.t -> opcode:Opcode.standard_control -> unit
+  val serialize_control
+    : ?mask:int32
+    -> Faraday.t
+    -> opcode:Opcode.standard_control
+    -> unit
 
   val schedule_serialize 
     :  ?mask:int32
@@ -93,10 +97,19 @@ module Frame : sig
     -> payload:Bigstring.t
     -> off:int
     -> len:int
-    -> Faraday.t
     -> unit
 
   val schedule_serialize_bytes
+    :  ?mask:int32
+    -> Faraday.t
+    -> is_fin:bool
+    -> opcode:Opcode.t
+    -> payload:Bytes.t
+    -> off:int
+    -> len:int
+    -> unit
+
+  val serialize_bytes
     :  ?mask:int32
     -> Faraday.t
     -> is_fin:bool 
