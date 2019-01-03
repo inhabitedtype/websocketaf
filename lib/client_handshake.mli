@@ -1,8 +1,8 @@
 module IOVec = Httpaf.IOVec
 
-type t 
+type t
 
-val create 
+val create
   :  nonce            : string
   -> host             : string
   -> port             : int
@@ -15,7 +15,8 @@ val next_read_operation  : t -> [ `Read | `Close ]
 val next_write_operation : t -> [ `Write of Bigstringaf.t IOVec.t list | `Yield | `Close of int ]
 
 val read : t -> Bigstringaf.t -> off:int -> len:int -> int
-val shutdown_reader : t -> unit
 val report_write_result : t -> [`Ok of int | `Closed ] -> unit
 
 val yield_writer : t -> (unit -> unit) -> unit
+
+val close : t -> unit
