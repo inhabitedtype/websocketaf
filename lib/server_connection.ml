@@ -9,18 +9,31 @@ type input_handlers = Server_websocket.input_handlers =
   { frame : opcode:Websocket.Opcode.t -> is_fin:bool -> Bigstring.t -> off:int -> len:int -> unit
   ; eof   : unit                                                                          -> unit }
 
+type error = [ `Exn of exn ]
+
+type error_handler = Wsd.t -> error -> unit
+
 type 'handle t =
   { mutable state: 'handle state
   ; websocket_handler: Wsd.t -> input_handlers
+  ; error_handler: error_handler
   }
 
 let passes_scrutiny _headers =
   true (* XXX(andreas): missing! *)
 
-let create ~sha1 ~fd ~websocket_handler =
+let default_error_handler wsd (`Exn exn) =
+  let message = Printexc.to_string exn in
+  let payload = Bytes.of_string message in
+  Wsd.send_bytes wsd ~kind:`Text payload ~off:0 ~len:(Bytes.length payload);
+  Wsd.close wsd
+;;
+
+let create ~sha1 ~fd ?(error_handler=default_error_handler) websocket_handler =
   let t =
     { state = Uninitialized
     ; websocket_handler
+    ; error_handler
     }
   in
   let request_handler reqd =
@@ -68,7 +81,7 @@ let upgrade
   ~sha1
   ~reqd
   ?(headers=Httpaf.Headers.empty)
-  websocket_handler =
+  ?(error_handler=default_error_handler) websocket_handler =
   let request = Httpaf.Reqd.request reqd in
   if passes_scrutiny request.headers then begin
     let key = Httpaf.Headers.get_exn request.headers "sec-websocket-key" in
@@ -86,17 +99,44 @@ let upgrade
       reqd
       ~flush_headers_immediately:true
       response
-    in ()
-  end;
-  { state = Websocket (Server_websocket.create ~websocket_handler)
-  ; websocket_handler
-  }
+    in
+    Ok { state = Websocket (Server_websocket.create ~websocket_handler)
+       ; websocket_handler
+       ; error_handler
+       }
+  end else
+    Error "Didn't pass scrutiny"
+
+let close t =
+  match t.state with
+  | Uninitialized       -> assert false
+  | Handshake handshake -> Server_handshake.close handshake
+  | Websocket websocket -> Server_websocket.close websocket
+;;
+
+let set_error_and_handle t error =
+  begin match t.state with
+  | Uninitialized
+  | Handshake _ -> assert false
+  | Websocket { wsd; _ } ->
+      if not (Wsd.is_closed wsd) then begin
+        t.error_handler wsd error;
+        close t
+      end;
+  end
+
+let report_exn t exn =
+  set_error_and_handle t (`Exn exn)
 
 let next_read_operation t =
   match t.state with
   | Uninitialized       -> assert false
   | Handshake handshake -> Server_handshake.next_read_operation handshake
-  | Websocket websocket -> (Server_websocket.next_read_operation websocket :> [ `Read | `Yield | `Close ])
+  | Websocket websocket ->
+    match Server_websocket.next_read_operation websocket with
+    | `Error (`Parse (_, message)) ->
+      set_error_and_handle t (`Exn (Failure message)); `Close
+    | (`Read | `Close) as operation -> operation
 ;;
 
 let read t bs ~off ~len =
@@ -145,11 +185,4 @@ let yield_writer t f =
   | Uninitialized       -> assert false
   | Handshake handshake -> Server_handshake.yield_writer handshake f
   | Websocket websocket -> Server_websocket.yield_writer websocket f
-;;
-
-let close t =
-  match t.state with
-  | Uninitialized       -> assert false
-  | Handshake handshake -> Server_handshake.close handshake
-  | Websocket websocket -> Server_websocket.close websocket
 ;;

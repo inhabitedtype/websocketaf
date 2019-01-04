@@ -54,7 +54,7 @@ let next t =
     if t.closed
     then `Close
     else `Read
-  | Fail    _ -> `Close
+  | Fail failure -> `Error failure
   | Partial _ -> `Read
 ;;
 

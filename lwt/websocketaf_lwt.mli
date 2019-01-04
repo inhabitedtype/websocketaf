@@ -21,6 +21,7 @@ module Server : sig
     :  ?config : Httpaf.Server_connection.Config.t
     -> ?headers: Httpaf.Headers.t
     -> reqd : Lwt_unix.file_descr Httpaf.Reqd.t
+    -> error_handler : Websocketaf.Server_connection.error_handler
     -> (Websocketaf.Wsd.t -> Websocketaf.Server_connection.input_handlers)
-    -> unit Lwt.t
+    -> (unit, string) result Lwt.t
 end

@@ -74,7 +74,13 @@ let next_read_operation t =
   match !t with
   | Uninitialized       -> assert false
   | Handshake handshake -> Client_handshake.next_read_operation handshake
-  | Websocket websocket -> Client_websocket.next_read_operation websocket
+  | Websocket websocket ->
+    match Client_websocket.next_read_operation websocket with
+    | `Error (`Parse (_, _message)) ->
+        (* TODO(anmonteiro): handle this *)
+        assert false
+        (* set_error_and_handle t (`Exn (Failure message)); `Close *)
+    | (`Read | `Close) as operation -> operation
 ;;
 
 let read t bs ~off ~len =
