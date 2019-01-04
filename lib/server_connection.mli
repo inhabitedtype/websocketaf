@@ -8,6 +8,7 @@ type input_handlers =
 
 val create
   : sha1 : (string -> string)
+  -> fd : 'handle
   -> websocket_handler : (Wsd.t -> input_handlers)
   -> 'handle t
 

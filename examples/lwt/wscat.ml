@@ -18,7 +18,7 @@ let websocket_handler wsd =
     flush stdout
   in
   let eof () =
-    Printf.printf "[EOF]\n"
+    Printf.eprintf "[EOF]\n%!"
   in
   { Websocketaf.Client_connection.frame
   ; eof
@@ -26,7 +26,7 @@ let websocket_handler wsd =
 
 let error_handler = function
   | `Handshake_failure (rsp, _body) ->
-    Format.printf "Handshake failure: %a" Httpaf.Response.pp_hum rsp
+    Format.eprintf "Handshake failure: %a\n%!" Httpaf.Response.pp_hum rsp
   | _ -> assert false
 
 let () =
