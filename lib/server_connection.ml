@@ -63,7 +63,34 @@ let create ~sha1 ~fd ~websocket_handler =
   in
   t.state <- Handshake handshake;
   t
-;;
+
+let upgrade
+  ~sha1
+  ~reqd
+  ?(headers=Httpaf.Headers.empty)
+  websocket_handler =
+  let request = Httpaf.Reqd.request reqd in
+  if passes_scrutiny request.headers then begin
+    let key = Httpaf.Headers.get_exn request.headers "sec-websocket-key" in
+    let accept = sha1 (key ^ "258EAFA5-E914-47DA-95CA-C5AB0DC85B11") in
+    let upgrade_headers = Httpaf.Headers.of_list [
+      "Transfer-Encoding",    "chunked";
+      "Upgrade",              "websocket";
+      "Connection",           "upgrade";
+      "Sec-Websocket-Accept", accept;
+    ]
+    in
+    let headers = Httpaf.Headers.(add_list upgrade_headers (to_list headers)) in
+    let response = Httpaf.(Response.create ~headers `Switching_protocols) in
+    let _body = Httpaf.Reqd.respond_with_streaming
+      reqd
+      ~flush_headers_immediately:true
+      response
+    in ()
+  end;
+  { state = Websocket (Server_websocket.create ~websocket_handler)
+  ; websocket_handler
+  }
 
 let next_read_operation t =
   match t.state with

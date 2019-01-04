@@ -12,6 +12,13 @@ val create
   -> websocket_handler : (Wsd.t -> input_handlers)
   -> 'handle t
 
+val upgrade
+  : sha1 : (string -> string)
+  -> reqd:'handle Httpaf.Reqd.t
+  -> ?headers:Httpaf.Headers.t
+  -> (Wsd.t -> input_handlers)
+  -> 'handle t
+
 val next_read_operation  : _ t -> [ `Read | `Yield | `Close ]
 val next_write_operation : _ t -> [ `Write of Bigstring.t IOVec.t list | `Yield | `Close of int ]
 
