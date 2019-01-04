@@ -20,7 +20,8 @@ let connection_handler : Unix.sockaddr -> Lwt_unix.file_descr -> unit Lwt.t =
       | `Other _ ->
         ()
     in
-    let eof () = ()
+    let eof () =
+      Printf.eprintf "EOF\n%!"
     in
     { Websocketaf.Server_connection.frame
     ; eof

@@ -83,6 +83,7 @@ module Server = struct
       let connection =
         Server_connection.create
           ~sha1
+          ~fd:socket
           ~websocket_handler:(websocket_handler client_addr)
       in
 
