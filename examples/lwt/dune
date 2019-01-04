@@ -1,3 +1,3 @@
 (executables
- (names wscat echo_server)
- (libraries websocketaf websocketaf-lwt lwt lwt.unix))
+ (names wscat echo_server echo_server_upgrade)
+ (libraries websocketaf websocketaf-lwt lwt lwt.unix httpaf-lwt))
