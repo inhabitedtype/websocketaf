@@ -77,52 +77,44 @@ let shutdown socket command =
 
 
 module Server = struct
-  let create_connection_handler ?config:_ ~websocket_handler ~error_handler:_ =
-    fun client_addr socket ->
-      let module Server_connection = Websocketaf.Server_connection in
-      let connection =
-        Server_connection.create
-          ~sha1
-          ~fd:socket
-          ~websocket_handler:(websocket_handler client_addr)
+  module Server_connection = Websocketaf.Server_connection
+
+  let start_read_write_loops ~socket connection =
+    let read_buffer = Buffer.create 0x1000 in
+    let read_loop_exited, notify_read_loop_exited = Lwt.wait () in
+
+    let rec read_loop () =
+      let rec read_loop_step () =
+        match Server_connection.next_read_operation connection with
+        | `Read ->
+          read socket read_buffer >>= begin function
+          | `Eof ->
+            Buffer.get read_buffer ~f:(fun bigstring ~off ~len ->
+              Server_connection.read_eof connection bigstring ~off ~len)
+            |> ignore;
+            read_loop_step ()
+          | `Ok _ ->
+            Buffer.get read_buffer ~f:(fun bigstring ~off ~len ->
+              Server_connection.read connection bigstring ~off ~len)
+            |> ignore;
+            read_loop_step ()
+          end
+
+        | `Yield ->
+          Server_connection.yield_reader connection read_loop;
+          Lwt.return_unit
+
+        | `Close ->
+          Lwt.wakeup_later notify_read_loop_exited ();
+          if not (Lwt_unix.state socket = Lwt_unix.Closed) then begin
+            shutdown socket Unix.SHUTDOWN_RECEIVE
+          end;
+          Lwt.return_unit
       in
 
-
-      let read_buffer = Buffer.create 0x1000 in
-      let read_loop_exited, notify_read_loop_exited = Lwt.wait () in
-
-      let rec read_loop () =
-        let rec read_loop_step () =
-          match Server_connection.next_read_operation connection with
-          | `Read ->
-            read socket read_buffer >>= begin function
-            | `Eof ->
-              Buffer.get read_buffer ~f:(fun bigstring ~off ~len ->
-                Server_connection.read_eof connection bigstring ~off ~len)
-              |> ignore;
-              read_loop_step ()
-            | `Ok _ ->
-              Buffer.get read_buffer ~f:(fun bigstring ~off ~len ->
-                Server_connection.read connection bigstring ~off ~len)
-              |> ignore;
-              read_loop_step ()
-            end
-
-          | `Yield ->
-            Server_connection.yield_reader connection read_loop;
-            Lwt.return_unit
-
-          | `Close ->
-            Lwt.wakeup_later notify_read_loop_exited ();
-            if not (Lwt_unix.state socket = Lwt_unix.Closed) then begin
-              shutdown socket Unix.SHUTDOWN_RECEIVE
-            end;
-            Lwt.return_unit
-        in
-
-        Lwt.async (fun () ->
-          Lwt.catch
-            read_loop_step
+      Lwt.async (fun () ->
+        Lwt.catch
+          read_loop_step
             (fun exn ->
               (* XXX(andreas): missing error reporting *)
               (* Server_connection.report_exn connection exn;*)
@@ -177,6 +169,32 @@ module Server = struct
         (fun _exn -> Lwt.return_unit)
     else
       Lwt.return_unit
+
+
+  (* TODO: should this error handler be a websocket error handler or an HTTP
+   * error handler?*)
+  let create_connection_handler ?config:_ ~websocket_handler ~error_handler:_ =
+    fun client_addr socket ->
+      let websocket_handler = websocket_handler client_addr in
+      let connection =
+        Server_connection.create
+          ~sha1
+          ~fd:socket
+          ~websocket_handler
+      in
+      start_read_write_loops ~socket connection
+
+
+  let upgrade_connection ?config:_ ?headers ~reqd websocket_handler =
+    let connection =
+      Server_connection.upgrade
+        ~sha1
+        ~reqd
+        ?headers
+        websocket_handler
+    in
+    let socket = Httpaf.Reqd.descriptor reqd in
+    start_read_write_loops ~socket connection
 end
 
 
@@ -197,8 +215,7 @@ module Client = struct
           read socket read_buffer >>= begin function
           | `Ok _ ->
             Buffer.get read_buffer ~f:(fun bigstring ~off ~len ->
-              Client_connection.read connection bigstring ~off ~len
-            )
+              Client_connection.read connection bigstring ~off ~len)
             |> ignore;
             read_loop_step ()
           | `Eof ->
