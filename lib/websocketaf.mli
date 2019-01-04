@@ -156,18 +156,24 @@ module Server_connection : sig
     { frame : opcode:Websocket.Opcode.t -> is_fin:bool -> Bigstring.t -> off:int -> len:int -> unit
     ; eof   : unit                                                                          -> unit }
 
+  type error = [ `Exn of exn ]
+
+  type error_handler = Wsd.t -> error -> unit
+
   val create
     : sha1 : (string -> string)
     -> fd : 'handle
-    -> websocket_handler : (Wsd.t -> input_handlers)
+    -> ?error_handler : error_handler
+    -> (Wsd.t -> input_handlers)
     -> 'handle t
 
   val upgrade
     : sha1 : (string -> string)
     -> reqd:'a Httpaf.Reqd.t
     -> ?headers: Httpaf.Headers.t
+    -> ?error_handler:error_handler
     -> (Wsd.t -> input_handlers)
-    -> 'handle t
+    -> ('handle t, string) result
 
   val next_read_operation  : _ t -> [ `Read | `Yield | `Close ]
   val next_write_operation : _ t -> [ `Write of Bigstring.t IOVec.t list | `Yield | `Close of int ]
@@ -175,6 +181,8 @@ module Server_connection : sig
   val read : _ t -> Bigstring.t -> off:int -> len:int -> int
   val read_eof : _ t -> Bigstring.t -> off:int -> len:int -> int
   val report_write_result : _ t -> [`Ok of int | `Closed ] -> unit
+
+  val report_exn : _ t -> exn -> unit
 
   val yield_reader : _ t -> (unit -> unit) -> unit
   val yield_writer : _ t -> (unit -> unit) -> unit
