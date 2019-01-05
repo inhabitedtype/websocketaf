@@ -1,0 +1,3 @@
+(executables
+ (names wscat echo_server echo_server_upgrade)
+ (libraries websocketaf websocketaf-async async httpaf-async))

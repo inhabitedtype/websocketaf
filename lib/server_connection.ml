@@ -172,9 +172,11 @@ let report_write_result t result =
   | Uninitialized       -> assert false
   | Handshake handshake ->
     begin match Server_handshake.report_write_result handshake result with
-    | `Ok pending_bytes ->      if pending_bytes == 0 then
-      let websocket_handler = t.websocket_handler in
-      t.state <- Websocket (Server_websocket.create ~websocket_handler);
+    | `Ok pending_bytes ->
+      if pending_bytes == 0 then
+        let websocket_handler = t.websocket_handler in
+        t.state <- Websocket (Server_websocket.create ~websocket_handler);
+        Server_handshake.wakeup_reader handshake
     | _ -> ()
     end
   | Websocket websocket -> Server_websocket.report_write_result websocket result

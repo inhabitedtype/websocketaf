@@ -1,0 +1,6 @@
+(library
+ (name        websocketaf_async)
+ (public_name websocketaf-async)
+ (libraries
+   async core angstrom-async faraday-async websocketaf digestif.ocaml base64)
+ (flags (:standard -safe-string)))

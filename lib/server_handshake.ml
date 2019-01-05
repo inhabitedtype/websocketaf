@@ -3,11 +3,13 @@ module IOVec = Httpaf.IOVec
 type 'handle t =
   { conn: 'handle Httpaf.Server_connection.t
   ; mutable pending_bytes: [ `Ok of int | `Error ]
+  ; wakeup_reader : (unit -> unit) list ref
   }
 
 let create ~request_handler ~fd =
   { conn = Httpaf.Server_connection.create ~fd request_handler
   ; pending_bytes = `Ok 0
+  ; wakeup_reader = ref []
   }
 
 let next_read_operation t =
