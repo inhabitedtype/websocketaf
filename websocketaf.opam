@@ -6,14 +6,14 @@ homepage: "https://github.com/inhabitedtype/websocketaf"
 bug-reports: "https://github.com/inhabitedtype/websocketaf/issues"
 dev-repo: "https://github.com/inhabitedtype/websocketaf.git"
 build: [
-  ["jbuilder" "subst"] {pinned}
-  ["jbuilder" "build" "-p" name "-j" jobs]
+  ["dune" "subst"] {pinned}
+  ["dune" "build" "-p" name "-j" jobs]
 ]
 build-test: [
-  ["jbuilder" "runtest" "-p" name]
+  ["dune" "runtest" "-p" name]
 ]
 depends: [
-  "jbuilder" {build & >= "1.0+beta10"}
+  "dune" {build}
   "base64"
   "alcotest" {test}
   "angstrom" {>= "0.7.0"}

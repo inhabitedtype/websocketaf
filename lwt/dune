@@ -1,0 +1,5 @@
+(library
+ (name websocketaf_lwt)
+ (public_name websocketaf-lwt)
+ (libraries faraday-lwt-unix websocketaf lwt.unix digestif.ocaml base64)
+ (flags (:standard -safe-string)))
