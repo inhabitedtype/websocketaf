@@ -26,6 +26,8 @@ module Opcode : sig
 
   val of_int     : int -> t option
   val of_int_exn : int -> t
+
+  val pp_hum : Format.formatter -> t -> unit
 end
 
 module Close_code : sig
@@ -66,8 +68,12 @@ module Frame : sig
   val opcode   : t -> Opcode.t
 
   val has_mask : t -> bool
-  val mask     : t -> int32 option
+  val mask     : t -> unit
+  val unmask   : t -> unit
+
   val mask_exn : t -> int32
+
+  val length : t -> int
 
   val payload_length : t -> int
   val with_payload   : t -> f:(Bigstring.t -> off:int -> len:int -> 'a) -> 'a
@@ -77,7 +83,11 @@ module Frame : sig
 
   val parse : t Angstrom.t
 
-  val serialize_control : Faraday.t -> opcode:Opcode.standard_control -> unit
+  val serialize_control
+    : ?mask:int32
+    -> Faraday.t
+    -> opcode:Opcode.standard_control
+    -> unit
 
   val schedule_serialize 
     :  ?mask:int32
@@ -87,10 +97,19 @@ module Frame : sig
     -> payload:Bigstring.t
     -> off:int
     -> len:int
-    -> Faraday.t
     -> unit
 
   val schedule_serialize_bytes
+    :  ?mask:int32
+    -> Faraday.t
+    -> is_fin:bool
+    -> opcode:Opcode.t
+    -> payload:Bytes.t
+    -> off:int
+    -> len:int
+    -> unit
+
+  val serialize_bytes
     :  ?mask:int32
     -> Faraday.t
     -> is_fin:bool 

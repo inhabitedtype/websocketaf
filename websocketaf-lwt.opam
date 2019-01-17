@@ -1,0 +1,22 @@
+opam-version: "2.0"
+name: "websocketaf-lwt"
+maintainer: "Spiros Eliopoulos <spiros@inhabitedtype.com>"
+authors: [ "Andreas Garnæs <andreas.garnaes@gmail.com>" ]
+license: "BSD-3-clause"
+homepage: "https://github.com/inhabitedtype/websocketaf"
+bug-reports: "https://github.com/inhabitedtype/websocketaf/issues"
+dev-repo: "git+https://github.com/inhabitedtype/websocketaf.git"
+build: [
+  ["dune" "subst" "-p" name] {pinned}
+  ["dune" "build" "-p" name "-j" jobs]
+]
+depends: [
+  "ocaml" {>= "4.03.0"}
+  "faraday-lwt-unix"
+  "websocketaf"
+  "dune" {build}
+  "lwt"
+  "digestif"
+  "base64"
+]
+synopsis: "Lwt support for websocket/af"

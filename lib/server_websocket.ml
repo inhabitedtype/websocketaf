@@ -8,11 +8,8 @@ type input_handlers =
   { frame : opcode:Websocket.Opcode.t -> is_fin:bool -> Bigstring.t -> off:int -> len:int -> unit
   ; eof   : unit                                                                          -> unit }
 
-let random_int32 () =
-  Random.int32 Int32.max_int
-
 let create ~websocket_handler =
-  let mode         = `Client random_int32 in
+  let mode         = `Server in
   let wsd          = Wsd.create mode in
   let { frame; _ } = websocket_handler wsd in
   { reader = Reader.create frame
