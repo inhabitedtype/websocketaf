@@ -1,0 +1,7 @@
+(library
+ (name        websocketaf)
+  (public_name websocketaf)
+  (libraries
+    base64 angstrom faraday httpaf result bigstringaf)
+  (flags (:standard -safe-string)))
+
