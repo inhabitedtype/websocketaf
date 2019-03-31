@@ -12,9 +12,9 @@ val create
   -> t
 
 val next_read_operation  : t -> [ `Read | `Close ]
-val next_write_operation : t -> [ `Write of Bigstring.t IOVec.t list | `Yield | `Close of int ]
+val next_write_operation : t -> [ `Write of Bigstringaf.t IOVec.t list | `Yield | `Close of int ]
 
-val read : t -> Bigstring.t -> off:int -> len:int -> int
+val read : t -> Bigstringaf.t -> off:int -> len:int -> int
 val shutdown_reader : t -> unit
 val report_write_result : t -> [`Ok of int | `Closed ] -> unit
 
