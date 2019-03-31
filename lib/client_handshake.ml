@@ -9,7 +9,7 @@ let create
     ~error_handler
     ~response_handler 
   =
-  let nonce = B64.encode nonce in
+  let nonce = Base64.encode_exn nonce in
   let headers =
     [ "upgrade"              , "websocket"
     ; "connection"           , "upgrade"
@@ -24,6 +24,6 @@ let create
       ~error_handler
       ~response_handler
   in
-  Httpaf.Body.close request_body;
+  Httpaf.Body.close_writer request_body;
   t
 ;;
