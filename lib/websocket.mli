@@ -70,9 +70,9 @@ module Frame : sig
   val mask_exn : t -> int32
 
   val payload_length : t -> int
-  val with_payload   : t -> f:(Bigstring.t -> off:int -> len:int -> 'a) -> 'a
+  val with_payload   : t -> f:(Bigstringaf.t -> off:int -> len:int -> 'a) -> 'a
 
-  val copy_payload       : t -> Bigstring.t
+  val copy_payload       : t -> Bigstringaf.t
   val copy_payload_bytes : t -> Bytes.t
 
   val parse : t Angstrom.t
@@ -84,7 +84,7 @@ module Frame : sig
     -> Faraday.t
     -> is_fin:bool 
     -> opcode:Opcode.t 
-    -> payload:Bigstring.t
+    -> payload:Bigstringaf.t
     -> off:int
     -> len:int
     -> Faraday.t

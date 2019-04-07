@@ -4,7 +4,7 @@ val schedule
   :  ?mask:int32
   -> t
   -> kind:[ `Text | `Binary ]
-  -> Bigstring.t
+  -> Bigstringaf.t
   -> off:int
   -> len:int
   -> unit

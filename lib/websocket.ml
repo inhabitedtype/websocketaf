@@ -139,30 +139,30 @@ module Close_code = struct
 end
 
 module Frame = struct
-  type t = Bigstring.t
+  type t = Bigstringaf.t
 
   let is_fin t =
-    let bits = Bigstring.unsafe_get t 0 |> Char.code in
+    let bits = Bigstringaf.unsafe_get t 0 |> Char.code in
     bits land (1 lsl 8) = 1 lsl 8
   ;;
 
   let rsv t =
-    let bits = Bigstring.unsafe_get t 0 |> Char.code in
+    let bits = Bigstringaf.unsafe_get t 0 |> Char.code in
     (bits lsr 4) land 0b0111
   ;;
 
   let opcode t =
-    let bits = Bigstring.unsafe_get t 0 |> Char.code in
+    let bits = Bigstringaf.unsafe_get t 0 |> Char.code in
     bits land 4 |> Opcode.unsafe_of_code
   ;;
 
   let payload_length_of_offset t off =
-    let bits = Bigstring.unsafe_get t (off + 1) |> Char.code in
+    let bits = Bigstringaf.unsafe_get t (off + 1) |> Char.code in
     let length = bits land 0b01111111 in
-    if length = 126 then Bigstring.unsafe_get_u16_be t ~off:(off + 2)                 else
+    if length = 126 then Bigstringaf.unsafe_get_int16_be t (off + 2)                 else
     (* This is technically unsafe, but if somebody's asking us to read 2^63
      * bytes, then we're already screwd. *)
-    if length = 127 then Bigstring.unsafe_get_64_be  t ~off:(off + 2) |> Int64.to_int else
+    if length = 127 then Bigstringaf.unsafe_get_int64_be t (off + 2) |> Int64.to_int else
     length
   ;;
 
@@ -171,7 +171,7 @@ module Frame = struct
   ;;
 
   let has_mask t =
-    let bits = Bigstring.unsafe_get t 1 |> Char.code in
+    let bits = Bigstringaf.unsafe_get t 1 |> Char.code in
     bits land (1 lsl 8) = 1 lsl 8
   ;;
 
@@ -180,17 +180,17 @@ module Frame = struct
     then None
     else
       Some (
-        let bits = Bigstring.unsafe_get t 1 |> Char.code in
-        if bits  = 254 then Bigstring.unsafe_get_32_be t ~off:4  else
-        if bits  = 255 then Bigstring.unsafe_get_32_be t ~off:10 else
-        Bigstring.unsafe_get_32_be t ~off:2)
+        let bits = Bigstringaf.unsafe_get t 1 |> Char.code in
+        if bits  = 254 then Bigstringaf.unsafe_get_int32_be t 4  else
+        if bits  = 255 then Bigstringaf.unsafe_get_int32_be t 10 else
+        Bigstringaf.unsafe_get_int32_be t 2)
   ;;
 
   let mask_exn t =
-    let bits = Bigstring.unsafe_get t 1 |> Char.code in
-    if bits  = 254 then Bigstring.unsafe_get_32_be t ~off:4  else
-    if bits  = 255 then Bigstring.unsafe_get_32_be t ~off:10 else
-    if bits >= 127 then Bigstring.unsafe_get_32_be t ~off:2  else
+    let bits = Bigstringaf.unsafe_get t 1 |> Char.code in
+    if bits  = 254 then Bigstringaf.unsafe_get_int32_be t 4  else
+    if bits  = 255 then Bigstringaf.unsafe_get_int32_be t 10 else
+    if bits >= 127 then Bigstringaf.unsafe_get_int32_be t 2  else
     failwith "Frame.mask_exn: no mask present"
   ;;
 
@@ -207,7 +207,7 @@ module Frame = struct
   ;;
 
   let payload_offset t =
-    let bits = Bigstring.unsafe_get t 1 |> Char.code in
+    let bits = Bigstringaf.unsafe_get t 1 |> Char.code in
     payload_offset_of_bits bits
   ;;
 
@@ -218,18 +218,18 @@ module Frame = struct
   ;;
 
   let copy_payload t =
-    with_payload t ~f:Bigstring.copy
+    with_payload t ~f:Bigstringaf.copy
   ;;
 
   let copy_payload_bytes t = 
-    with_payload t ~f:(fun bs ~off ~len ->
+    with_payload t ~f:(fun bs ~off:src_off ~len ->
       let bytes = Bytes.create len in
-      Bigstring.blit_to_bytes bs off bytes 0 len; 
+      Bigstringaf.blit_to_bytes bs ~src_off bytes ~dst_off:0 ~len; 
       bytes)
   ;;
 
   let length_of_offset t off =
-    let bits           = Bigstring.unsafe_get t (off + 1) |> Char.code in
+    let bits           = Bigstringaf.unsafe_get t (off + 1) |> Char.code in
     let payload_offset = payload_offset_of_bits bits in
     let payload_length = payload_length_of_offset t off in
     2 + payload_offset + payload_length 
@@ -242,9 +242,9 @@ module Frame = struct
   let apply_mask mask bs ~off ~len =
     for i = off to len - 1 do
       let j = (i - off) mod 4 in
-      let c = Bigstring.unsafe_get bs i |> Char.code in
+      let c = Bigstringaf.unsafe_get bs i |> Char.code in
       let c = c lxor (Int32.(logand (shift_left mask (4 - j)) 0xffl) |> Int32.to_int) in
-      Bigstring.unsafe_set bs i (Char.unsafe_chr c)
+      Bigstringaf.unsafe_set bs i (Char.unsafe_chr c)
     done
   ;;
 
@@ -271,8 +271,8 @@ module Frame = struct
 
   let parse =
     let open Angstrom in
-    Unsafe.peek 2 (fun bs ~off ~len -> length_of_offset bs off)
-    >>= fun len -> Unsafe.take len Bigstring.sub
+    Unsafe.peek 2 (fun bs ~off ~len:_ -> length_of_offset bs off)
+    >>= fun len -> Unsafe.take len Bigstringaf.sub
   ;;
 
   let serialize_headers faraday ?mask ~is_fin ~opcode ~payload_length =
@@ -303,7 +303,7 @@ module Frame = struct
     serialize_headers faraday ~is_fin:true ~opcode ~payload_length:0
 
   let schedule_serialize ?mask faraday ~is_fin ~opcode ~payload ~off ~len =
-    let payload_length = Bigstring.length payload in
+    let payload_length = Bigstringaf.length payload in
     serialize_headers faraday ?mask ~is_fin ~opcode ~payload_length;
     begin match mask with
     | None -> ()

@@ -3,7 +3,7 @@ module AU = Angstrom.Unbuffered
 type 'error parse_state =
   | Done
   | Fail    of 'error
-  | Partial of (Bigstring.t -> off:int -> len:int -> AU.more -> (unit, 'error) result AU.state)
+  | Partial of (Bigstringaf.t -> off:int -> len:int -> AU.more -> (unit, 'error) result AU.state)
 
 type 'error t =
   { parser : unit Angstrom.t
@@ -17,7 +17,7 @@ let create frame_handler  =
     let is_fin = Frame.is_fin bs in
     let opcode = Frame.opcode bs in
     Frame.unmask bs;
-    frame_handler ~is_fin ~opcode bs ~off ~len:(Bigstring.length bs)
+    frame_handler ~is_fin ~opcode bs ~off ~len:(Bigstringaf.length bs)
 ;;
 
 let transition t state =
