@@ -1,10 +1,10 @@
 module Opcode = struct
-  type standard_non_control = 
+  type standard_non_control =
     [ `Continuation
     | `Text
     | `Binary ]
 
-  type standard_control = 
+  type standard_control =
     [ `Connection_close
     | `Ping
     | `Pong ]
@@ -48,7 +48,7 @@ module Opcode = struct
     Array.unsafe_get code_table code
 
   let of_code code =
-    if code > 0xf 
+    if code > 0xf
     then None
     else Some (Array.unsafe_get code_table code)
 
@@ -60,6 +60,9 @@ module Opcode = struct
   let to_int = code
   let of_int = of_code
   let of_int_exn = of_code_exn
+
+  let pp_hum fmt t =
+    Format.fprintf fmt "%d" (to_int t)
 end
 
 module Close_code = struct
@@ -128,7 +131,7 @@ module Close_code = struct
     then failwith "Close_code.of_code_exn: value can't fit in two bytes";
     if code < 1000
     then failwith "Close_code.of_code_exn: value in invalid range 0-999";
-    if code < 1016 
+    if code < 1016
     then unsafe_of_code (code land 0b1111)
     else `Other code
   ;;
@@ -153,7 +156,7 @@ module Frame = struct
 
   let opcode t =
     let bits = Bigstringaf.unsafe_get t 0 |> Char.code in
-    bits land 4 |> Opcode.unsafe_of_code
+    bits land 0b1111 |> Opcode.unsafe_of_code
   ;;
 
   let payload_length_of_offset t off =
@@ -166,14 +169,13 @@ module Frame = struct
     length
   ;;
 
-  let payload_length t = 
+  let payload_length t =
     payload_length_of_offset t 0
   ;;
 
   let has_mask t =
     let bits = Bigstringaf.unsafe_get t 1 |> Char.code in
-    bits land (1 lsl 8) = 1 lsl 8
-  ;;
+    bits land (1 lsl 7) = 1 lsl 7
 
   let mask t =
     if not (has_mask t) 
@@ -196,9 +198,9 @@ module Frame = struct
 
   let payload_offset_of_bits bits =
     let initial_offset = 2 in
-    let mask_offset    = (bits land (1 lsl 8)) lsr (7 - 2) in
-    let length_offset  = 
-      let length = bits land 0b0111111 in
+    let mask_offset    = (bits land (1 lsl 7)) lsr (7 - 2) in
+    let length_offset  =
+      let length = bits land 0b01111111 in
       if length < 126
       then 0
       else 2 lsl ((length land 0b1) lsl 2)
@@ -232,23 +234,27 @@ module Frame = struct
     let bits           = Bigstringaf.unsafe_get t (off + 1) |> Char.code in
     let payload_offset = payload_offset_of_bits bits in
     let payload_length = payload_length_of_offset t off in
-    2 + payload_offset + payload_length 
+    payload_offset + payload_length
   ;;
 
+  let length t =
+		length_of_offset t 0
+	;;
+
   let apply_mask mask bs ~off ~len =
-    for i = off to len - 1 do
+    for i = off to off + len - 1 do
       let j = (i - off) mod 4 in
       let c = Bigstringaf.unsafe_get bs i |> Char.code in
-      let c = c lxor (Int32.(logand (shift_left mask (4 - j)) 0xffl) |> Int32.to_int) in
+      let c = c lxor Int32.(logand (shift_right mask (8 * (3 - j))) 0xffl |> to_int) in
       Bigstringaf.unsafe_set bs i (Char.unsafe_chr c)
     done
   ;;
 
   let apply_mask_bytes mask bs ~off ~len =
-    for i = off to len - 1 do
+    for i = off to off + len - 1 do
       let j = (i - off) mod 4 in
       let c = Bytes.unsafe_get bs i |> Char.code in
-      let c = c lxor (Int32.(logand (shift_left mask (4 - j)) 0xffl) |> Int32.to_int) in
+      let c = c lxor Int32.(logand (shift_right mask (8 * (3 - j))) 0xffl |> to_int) in
       Bytes.unsafe_set bs i (Char.unsafe_chr c)
     done
   ;;
@@ -273,14 +279,14 @@ module Frame = struct
 
   let serialize_headers faraday ?mask ~is_fin ~opcode ~payload_length =
     let opcode = Opcode.to_int opcode in
-    let is_fin = if is_fin then 1 lsl 8 else 0 in
+    let is_fin = if is_fin then 1 lsl 7 else 0 in
     let is_mask =
       match mask with
       | None   -> 0
-      | Some _ -> 1 lsl 8
+      | Some _ -> 1 lsl 7
     in
-    Faraday.write_uint8 faraday (is_fin lsl opcode);
-    if      payload_length <= 125    then 
+    Faraday.write_uint8 faraday (is_fin lor opcode);
+    if      payload_length <= 125    then
       Faraday.write_uint8 faraday (is_mask lor payload_length)
     else if payload_length <= 0xffff then begin
       Faraday.write_uint8     faraday (is_mask lor 126);
