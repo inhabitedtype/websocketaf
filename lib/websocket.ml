@@ -142,25 +142,25 @@ module Close_code = struct
 end
 
 module Frame = struct
-  type t = Bigstring.t
+  type t = Bigstringaf.t
 
   let is_fin t =
-    let bits = Bigstring.unsafe_get t 0 |> Char.code in
+    let bits = Bigstringaf.unsafe_get t 0 |> Char.code in
     bits land (1 lsl 8) = 1 lsl 8
   ;;
 
   let rsv t =
-    let bits = Bigstring.unsafe_get t 0 |> Char.code in
+    let bits = Bigstringaf.unsafe_get t 0 |> Char.code in
     (bits lsr 4) land 0b0111
   ;;
 
   let opcode t =
-    let bits = Bigstring.unsafe_get t 0 |> Char.code in
+    let bits = Bigstringaf.unsafe_get t 0 |> Char.code in
     bits land 0b1111 |> Opcode.unsafe_of_code
   ;;
 
   let payload_length_of_offset t off =
-    let bits = Bigstring.unsafe_get t (off + 1) |> Char.code in
+    let bits = Bigstringaf.unsafe_get t (off + 1) |> Char.code in
     let length = bits land 0b01111111 in
     if length = 126 then Bigstringaf.unsafe_get_int16_be t (off + 2)                 else
     (* This is technically unsafe, but if somebody's asking us to read 2^63
@@ -174,12 +174,12 @@ module Frame = struct
   ;;
 
   let has_mask t =
-    let bits = Bigstring.unsafe_get t 1 |> Char.code in
+    let bits = Bigstringaf.unsafe_get t 1 |> Char.code in
     bits land (1 lsl 7) = 1 lsl 7
   ;;
 
   let mask_exn t =
-    let bits = Bigstring.unsafe_get t 1 |> Char.code in
+    let bits = Bigstringaf.unsafe_get t 1 |> Char.code in
     if bits  = 254 then Bigstringaf.unsafe_get_int32_be t 4  else
     if bits  = 255 then Bigstringaf.unsafe_get_int32_be t 10 else
     if bits >= 127 then Bigstringaf.unsafe_get_int32_be t 2  else
@@ -199,7 +199,7 @@ module Frame = struct
   ;;
 
   let payload_offset t =
-    let bits = Bigstring.unsafe_get t 1 |> Char.code in
+    let bits = Bigstringaf.unsafe_get t 1 |> Char.code in
     payload_offset_of_bits bits
   ;;
 
@@ -214,14 +214,14 @@ module Frame = struct
   ;;
 
   let copy_payload_bytes t =
-    with_payload t ~f:(fun bs ~off ~len ->
+    with_payload t ~f:(fun bs ~off:src_off ~len ->
       let bytes = Bytes.create len in
-      Bigstring.blit_to_bytes bs off bytes 0 len;
+      Bigstringaf.blit_to_bytes bs ~src_off bytes ~dst_off:0 ~len;
       bytes)
   ;;
 
   let length_of_offset t off =
-    let bits           = Bigstring.unsafe_get t (off + 1) |> Char.code in
+    let bits           = Bigstringaf.unsafe_get t (off + 1) |> Char.code in
     let payload_offset = payload_offset_of_bits bits in
     let payload_length = payload_length_of_offset t off in
     payload_offset + payload_length
@@ -234,9 +234,9 @@ module Frame = struct
   let apply_mask mask bs ~off ~len =
     for i = off to off + len - 1 do
       let j = (i - off) mod 4 in
-      let c = Bigstring.unsafe_get bs i |> Char.code in
+      let c = Bigstringaf.unsafe_get bs i |> Char.code in
       let c = c lxor Int32.(logand (shift_right mask (8 * (3 - j))) 0xffl |> to_int) in
-      Bigstring.unsafe_set bs i (Char.unsafe_chr c)
+      Bigstringaf.unsafe_set bs i (Char.unsafe_chr c)
     done
   ;;
 

@@ -7,7 +7,7 @@ type error =
   | `Handshake_failure of Httpaf.Response.t * [`read] Httpaf.Body.t ]
 
 type input_handlers = Client_websocket.input_handlers =
-  { frame : opcode:Websocket.Opcode.t -> is_fin:bool -> Bigstring.t -> off:int -> len:int -> unit
+  { frame : opcode:Websocket.Opcode.t -> is_fin:bool -> Bigstringaf.t -> off:int -> len:int -> unit
   ; eof   : unit                                                                          -> unit }
 
 val create
@@ -21,10 +21,10 @@ val create
   -> t
 
 val next_read_operation  : t -> [ `Read | `Close ]
-val next_write_operation : t -> [ `Write of Bigstring.t IOVec.t list | `Yield | `Close of int ]
+val next_write_operation : t -> [ `Write of Bigstringaf.t IOVec.t list | `Yield | `Close of int ]
 
-val read : t -> Bigstring.t -> off:int -> len:int -> int
-val read_eof : t -> Bigstring.t -> off:int -> len:int -> int
+val read : t -> Bigstringaf.t -> off:int -> len:int -> int
+val read_eof : t -> Bigstringaf.t -> off:int -> len:int -> int
 val report_write_result : t -> [`Ok of int | `Closed ] -> unit
 
 val yield_writer : t -> (unit -> unit) -> unit

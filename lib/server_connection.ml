@@ -8,7 +8,7 @@ type 'handle state =
 type 'handle t = 'handle state ref
 
 type input_handlers = Server_websocket.input_handlers =
-  { frame : opcode:Websocket.Opcode.t -> is_fin:bool -> Bigstring.t -> off:int -> len:int -> unit
+  { frame : opcode:Websocket.Opcode.t -> is_fin:bool -> Bigstringaf.t -> off:int -> len:int -> unit
   ; eof   : unit                                                                          -> unit }
 
 let passes_scrutiny _headers =

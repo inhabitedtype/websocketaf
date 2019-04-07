@@ -14,7 +14,7 @@ val create
 val schedule
   :  t
   -> kind:[ `Text | `Binary ]
-  -> Bigstring.t
+  -> Bigstringaf.t
   -> off:int
   -> len:int
   -> unit
@@ -33,7 +33,7 @@ val send_pong : t -> unit
 val flushed : t -> (unit -> unit) -> unit
 val close   : t -> unit
 
-val next : t -> [ `Write of Bigstring.t IOVec.t list | `Yield | `Close of int ]
+val next : t -> [ `Write of Bigstringaf.t IOVec.t list | `Yield | `Close of int ]
 val report_result : t -> [`Ok of int | `Closed ] -> unit
 
 val is_closed : t -> bool

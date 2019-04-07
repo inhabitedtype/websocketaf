@@ -3,7 +3,7 @@ module AU = Angstrom.Unbuffered
 type 'error parse_state =
   | Done
   | Fail    of 'error
-  | Partial of (Bigstring.t -> off:int -> len:int -> AU.more -> unit AU.state)
+  | Partial of (Bigstringaf.t -> off:int -> len:int -> AU.more -> unit AU.state)
 
 type 'error t =
   { parser : unit Angstrom.t

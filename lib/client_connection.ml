@@ -12,7 +12,7 @@ type error =
   | `Handshake_failure of Httpaf.Response.t * [`read] Httpaf.Body.t ]
 
 type input_handlers = Client_websocket.input_handlers =
-  { frame : opcode:Websocket.Opcode.t -> is_fin:bool -> Bigstring.t -> off:int -> len:int -> unit
+  { frame : opcode:Websocket.Opcode.t -> is_fin:bool -> Bigstringaf.t -> off:int -> len:int -> unit
   ; eof   : unit                                                                          -> unit }
 
 let passes_scrutiny ~accept headers =
