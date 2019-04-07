@@ -44,7 +44,7 @@ let create
     ~websocket_handler
   =
   let t = ref Uninitialized in
-  let nonce = B64.encode nonce in
+  let nonce = Base64.encode_exn nonce in
   let response_handler response response_body =
     let accept = sha1 (nonce ^ "258EAFA5-E914-47DA-95CA-C5AB0DC85B11") in
     match response.Httpaf.Response.status with
