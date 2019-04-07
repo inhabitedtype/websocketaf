@@ -1,0 +1,15 @@
+language: c
+sudo: false
+services:
+  - docker
+install: wget https://raw.githubusercontent.com/ocaml/ocaml-travisci-skeleton/master/.travis-docker.sh
+script: bash -ex ./.travis-docker.sh
+env:
+  global:
+  - DISTRO="ubuntu"
+  - PACKAGE="websocketaf"
+  - TESTS=true
+  matrix:
+  - OCAML_VERSION="4.07"
+  - OCAML_VERSION="4.06"
+  - OCAML_VERSION="4.05"
