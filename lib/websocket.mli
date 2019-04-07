@@ -69,6 +69,9 @@ module Frame : sig
   val mask     : t -> int32 option
   val mask_exn : t -> int32
 
+  val mask_inplace   : t -> unit
+  val unmask_inplace : t -> unit
+
   val payload_length : t -> int
   val with_payload   : t -> f:(Bigstringaf.t -> off:int -> len:int -> 'a) -> 'a
 

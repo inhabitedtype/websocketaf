@@ -17,7 +17,7 @@ let create frame_handler =
     >>| fun frame ->
       let is_fin = Websocket.Frame.is_fin frame in
       let opcode = Websocket.Frame.opcode frame in
-      Websocket.Frame.unmask frame;
+      Websocket.Frame.unmask_inplace frame;
       Websocket.Frame.with_payload frame ~f:(frame_handler ~opcode ~is_fin)
   in
   { parser

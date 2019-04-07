@@ -235,10 +235,6 @@ module Frame = struct
     2 + payload_offset + payload_length 
   ;;
 
-  let length t =
-    length_of_offset t 0
-  ;;
-
   let apply_mask mask bs ~off ~len =
     for i = off to len - 1 do
       let j = (i - off) mod 4 in
@@ -258,7 +254,7 @@ module Frame = struct
   ;;
 
 
-  let unmask t =
+  let unmask_inplace t =
     if has_mask t then begin
       let mask = mask_exn t in
       let len = payload_length t in
@@ -267,7 +263,7 @@ module Frame = struct
     end
   ;;
 
-  let mask = unmask
+  let mask_inplace = unmask_inplace
 
   let parse =
     let open Angstrom in
