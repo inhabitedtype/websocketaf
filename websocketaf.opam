@@ -18,7 +18,7 @@ depends: [
   "bigstringaf"
   "angstrom" {>= "0.7.0"}
   "faraday"  {>= "0.5.0"}
-  "httpaf"
+  "httpaf"   {<  "0.6.0"}
   "result"
 ]
 synopsis:
