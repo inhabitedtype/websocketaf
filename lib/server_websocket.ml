@@ -38,8 +38,8 @@ type t =
   ; wsd    : Wsd.t }
 
 type input_handlers =
-  { frame : opcode:Websocket.Opcode.t -> is_fin:bool -> Bigstring.t -> off:int -> len:int -> unit
-  ; eof   : unit                                                                          -> unit }
+  { frame : opcode:Websocket.Opcode.t -> is_fin:bool -> Bigstringaf.t -> off:int -> len:int -> unit
+  ; eof   : unit                                                                            -> unit }
 
 let create ~websocket_handler =
   let mode         = `Server in
